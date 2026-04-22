@@ -13,10 +13,13 @@ type apiConfig struct {
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
-	cfg := apiConfig{}
+	cfg := apiConfig{fileserverHits: atomic.Int32{}}
+
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(filepathRoot)))))
-	mux.HandleFunc("/healthz", handlerReadiness)
+	mux.HandleFunc("GET /api/healthz", handlerReadiness)
+	mux.HandleFunc("GET /api/metrics", cfg.handlerHits)
+	mux.HandleFunc("POST /api/reset", cfg.handlerReset)
 
 	server := &http.Server{
 		Addr:    ":" + port,
@@ -28,6 +31,8 @@ func main() {
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	cfg.fileserverHits.Add(1)
-	return next
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg.fileserverHits.Add(1)
+		next.ServeHTTP(w, r)
+	})
 }
