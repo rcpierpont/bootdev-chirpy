@@ -6,6 +6,14 @@ import (
 )
 
 func (cfg *apiConfig) handlerHits(w http.ResponseWriter, r *http.Request) {
-	hits := fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())
+	w.Header().Add("Content-Type", "text/html")
+	hits := fmt.Sprintf(`
+<html>
+<body>
+	<h1>Welcome, Chirpy Admin</h1>
+	<p>Chirpy has been visited %d times!</p>
+</body>
+	
+</html>`, cfg.fileserverHits.Load())
 	w.Write([]byte(hits))
 }
